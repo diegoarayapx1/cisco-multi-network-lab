@@ -1,0 +1,62 @@
+!
+hostname BR1
+!
+no ip domain lookup
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key CISCO address 200.20.20.2
+!
+crypto ipsec transform-set TSET esp-aes esp-sha-hmac
+ mode tunnel
+!
+crypto map CMAP 10 ipsec-isakmp
+ set peer 200.20.20.2
+ set transform-set TSET
+ match address ACL-VPN
+!
+interface Ethernet0/0
+ ip address 200.10.10.2 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:101::2/126
+ crypto map CMAP
+!
+interface Ethernet0/1
+ ip address 192.168.50.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:110::1/64
+ ipv6 ospf 1 area 0
+!
+router ospf 1
+ router-id 1.1.1.1
+ passive-interface Ethernet0/0
+ network 192.168.50.0 0.0.0.3 area 0
+ redistribute bgp 200 subnets
+!
+router bgp 200
+ bgp router-id 1.1.1.1
+ bgp log-neighbor-changes
+ network 200.10.10.0 mask 255.255.255.252
+ neighbor 200.10.10.1 remote-as 100
+ redistribute ospf 1 metric 100
+!
+ip access-list extended ACL-VPN
+ permit ip 192.168.20.0 0.0.0.255 172.16.51.0 0.0.0.255
+!
+ipv6 router ospf 1
+ router-id 1.1.1.1
+!
+line vty 0 4
+ login
+ transport input telnet
+!
+end
+
+! ---- NOTA ----
+! Correcciones aplicadas sobre la config original durante troubleshooting:
+! 1. ACL-VPN corregida de 172.16.50.0 a 172.16.51.0 (segmento real de Host_1)
+! 2. Agregado "redistribute bgp 200 subnets" en OSPF (rutas externas a la LAN interna)
+! 3. Agregado "redistribute ospf 1 metric 100" en BGP (VLANs internas al ISP/BR2)

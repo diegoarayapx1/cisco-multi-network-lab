@@ -1,0 +1,62 @@
+!
+hostname BR2
+!
+no ip domain lookup
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+crypto isakmp policy 10
+ encr aes
+ authentication pre-share
+ group 2
+crypto isakmp key CISCO address 200.10.10.2
+!
+crypto ipsec transform-set TSET esp-aes esp-sha-hmac
+ mode tunnel
+!
+crypto map CMAP 10 ipsec-isakmp
+ set peer 200.10.10.2
+ set transform-set TSET
+ match address ACL-VPN
+!
+interface Ethernet0/0
+ ip address 200.20.20.2 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:101::6/126
+ crypto map CMAP
+!
+interface Ethernet0/2
+ ip address 172.16.50.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:120::1/64
+ ipv6 ospf 1 area 0
+!
+router ospf 1
+ router-id 2.2.2.2
+ passive-interface Ethernet0/0
+ network 172.16.50.0 0.0.0.3 area 0
+ redistribute bgp 300 subnets metric 1 metric-type 2
+!
+router bgp 300
+ bgp router-id 2.2.2.2
+ bgp log-neighbor-changes
+ network 200.20.20.0 mask 255.255.255.252
+ neighbor 200.20.20.1 remote-as 100
+ redistribute ospf 1 metric 100
+!
+ip access-list extended ACL-VPN
+ permit ip 172.16.51.0 0.0.0.255 192.168.20.0 0.0.0.255
+!
+ipv6 router ospf 1
+ router-id 2.2.2.2
+!
+line vty 0 4
+ login
+ transport input telnet
+!
+end
+
+! ---- NOTA ----
+! 1. IPv6 + OSPFv6 en Ethernet0/2 (dual-stack hacia CORE_R2).
+! 2. "redistribute bgp 300 subnets" en OSPF (regenera LSA tipo 5; usar
+!    "clear ip ospf process" si las rutas no aparecen de inmediato).
+! 3. "redistribute ospf 1 metric 100" en BGP.

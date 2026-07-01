@@ -1,0 +1,43 @@
+!
+hostname CORE_R2
+!
+no ip domain lookup
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+interface Ethernet0/1
+ ip address 172.16.50.2 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:120::2/64
+ ipv6 ospf 1 area 0
+!
+interface Ethernet0/2
+ ip address 172.16.51.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:121::1/64
+ ipv6 ospf 1 area 0
+!
+interface Ethernet0/3
+ ip address 172.16.52.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:122::1/64
+ ipv6 ospf 1 area 0
+!
+router ospf 1
+ router-id 4.4.4.4
+ passive-interface Ethernet0/2
+ passive-interface Ethernet0/3
+ network 172.16.50.0 0.0.0.3 area 0
+ network 172.16.51.0 0.0.0.3 area 0
+ network 172.16.52.0 0.0.0.3 area 0
+!
+ipv6 router ospf 1
+ router-id 4.4.4.4
+!
+line vty 0 4
+ login
+ transport input telnet
+!
+end
+
+! ---- NOTA ----
+! Removida la linea "redistribute bgp 300 subnets": CORE_R2 no corre BGP, era un
+! leftover sin efecto. Aprende 192.168.20.0 como O E2 via OSPF desde BR2.

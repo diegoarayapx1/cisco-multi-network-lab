@@ -1,0 +1,32 @@
+!
+hostname ISP
+!
+no ip domain lookup
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+interface Loopback0
+ ip address 8.8.8.8 255.255.255.255
+ ipv6 address 3001:ABCD:ABCD:8::8/128
+!
+interface Ethernet0/0
+ ip address 200.10.10.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:101::1/126
+!
+interface Ethernet0/1
+ ip address 200.20.20.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:101::5/126
+!
+router bgp 100
+ bgp router-id 100.100.100.100
+ bgp log-neighbor-changes
+ network 8.8.8.8 mask 255.255.255.255
+ neighbor 200.10.10.2 remote-as 200
+ neighbor 200.20.20.2 remote-as 300
+!
+line vty 0 4
+ login
+ transport input telnet
+!
+end

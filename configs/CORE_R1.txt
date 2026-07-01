@@ -1,0 +1,53 @@
+!
+hostname CORE_R1
+!
+no logging console
+!
+no ip domain lookup
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+interface Ethernet0/0
+ ip address 192.168.50.2 255.255.255.252
+ ip access-group FILTRO-HOST1 out
+ ipv6 address 3001:ABCD:ABCD:110::2/64
+ ipv6 ospf 1 area 0
+!
+interface Ethernet0/2
+ ip address 192.168.51.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:111::1/64
+ ipv6 ospf 1 area 1
+!
+interface Ethernet0/3
+ ip address 192.168.52.1 255.255.255.252
+ ipv6 address 3001:ABCD:ABCD:112::1/64
+ ipv6 ospf 1 area 1
+!
+router ospf 1
+ router-id 3.3.3.3
+ network 192.168.50.0 0.0.0.3 area 0
+ network 192.168.51.0 0.0.0.3 area 1
+ network 192.168.52.0 0.0.0.3 area 1
+!
+ip access-list extended FILTRO-HOST1
+ remark Solo VLAN20 puede alcanzar el segmento de Host_1
+ permit ip 192.168.20.0 0.0.0.255 172.16.51.0 0.0.0.255
+ deny   ip any 172.16.51.0 0.0.0.255
+ permit ip any any
+!
+ipv6 router ospf 1
+ router-id 3.3.3.3
+!
+line vty 0 4
+ login
+ transport input telnet
+!
+end
+
+! ---- NOTA ----
+! 1. Sin "passive-interface" en Et0/2 y Et0/3: forman adyacencia OSPF activa
+!    en area 1 con Dist_SWA/SWB.
+! 2. ACL FILTRO-HOST1 aplicada saliente en Et0/0 (hacia BR1), cercana al origen:
+!    solo VLAN20 alcanza el segmento de Host_1 (172.16.51.0/24); VLAN21/22 se
+!    descartan. La cripto-ACL de la VPN cifra; esta ACL filtra (ver lessons-learned.md).
